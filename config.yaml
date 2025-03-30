@@ -1,0 +1,6 @@
+%YAML 1.2
+phase: 1
+detect:
+ tetris:
+  minRotatedrectArea: 5000
+  maxRotatedrectArea: 12000
