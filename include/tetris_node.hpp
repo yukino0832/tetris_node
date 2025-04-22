@@ -1,6 +1,7 @@
 #pragma once
 
 #include "detector.hpp"
+#include "planner.hpp"
 
 const std::string CONFIG_PATH = "../config.yaml";
 

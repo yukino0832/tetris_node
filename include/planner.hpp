@@ -1,3 +1,5 @@
+#pragma once
+
 #include "tetris.hpp"
 
 class Planner {
@@ -9,5 +11,5 @@ public:
 private:
     void planMandatory(std::unordered_map<COLORS, std::vector<tetris>>& tetrisSet);
     void planAdvanced(std::unordered_map<COLORS, std::vector<tetris>>& tetrisSet);
-    void moveOnce(std::unordered_map<COLORS, std::vector<tetris>>& tetrisSet, COLORS type, int x, int y, int rotateTimes)
+    void moveOnce(std::unordered_map<COLORS, std::vector<tetris>>& tetrisSet, COLORS type, int x, int y, int rotateTimes);
 };

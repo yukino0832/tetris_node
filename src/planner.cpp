@@ -17,7 +17,7 @@ void Planner::plan(std::unordered_map<COLORS, std::vector<tetris>>& tetrisSet) {
  * @param[in] tetrisSet 检测到的方块集合
  */
 void Planner::planMandatory(std::unordered_map<COLORS, std::vector<tetris>>& tetrisSet) {
-    moveOnce(tetrisSet, COLORS::PURPLE, 10, 14, 1);
+    moveOnce(tetrisSet, COLORS::PURPLE, 10, 14, 3);
     moveOnce(tetrisSet, COLORS::RED, 6, 14, 0);
     moveOnce(tetrisSet, COLORS::YELLOW, 4, 14, 0);
     moveOnce(tetrisSet, COLORS::BROWN, 1, 13, 1);

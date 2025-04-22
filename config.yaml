@@ -1,6 +1,7 @@
 %YAML 1.2
-phase: 1
+phase: 2
 detect:
  tetris:
+  threshold: 120
   minRotatedrectArea: 5000
   maxRotatedrectArea: 12000

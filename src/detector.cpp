@@ -88,14 +88,13 @@ void Detector::preprocess(const cv::Mat& img) {
     m_image = kmeansImageClustering(m_imageRaw, 3);
     cv::imshow("kmeans", m_image);
     cv::cvtColor(m_image, m_image, cv::COLOR_BGR2GRAY);
-    cv::threshold(m_image, m_image, 140, 255, cv::THRESH_BINARY);
+    cv::threshold(m_image, m_image, Param::threshold, 255, cv::THRESH_BINARY);
     // cv::threshold(m_image, m_image, 0, 255, cv::THRESH_OTSU);
     cv::bitwise_not(m_image, m_image);
     cv::Mat kernel5 = cv::getStructuringElement(cv::MORPH_RECT, cv::Size(5, 5), cv::Point(-1, -1));
-    cv::erode(m_image, m_image, kernel5, cv::Point(-1, -1), 2);
+    cv::erode(m_image, m_image, kernel5, cv::Point(-1, -1));
     m_imageBinary = m_image.clone();
     cv::imshow("binary", m_imageBinary);
-    cv::waitKey(5000);
 }
 
 /**
@@ -116,13 +115,13 @@ void Detector::findTetris() {
             continue;
         drawRect(m_imageRaw, rect, Param::white, 2);
         double ratio = std::max(rect.size.height, rect.size.width) / std::min(rect.size.height, rect.size.width);
-        if (ratio < 1.3 && ratio > 0.7) {
+        if (ratio < 1.2) {
             Tetris = std::move(tetris(rect, COLORS::ORANGE));
             setCodeMat(Tetris);
         } else if (ratio < 6 && ratio > 3.5) {
             Tetris = std::move(tetris(rect, COLORS::RED));
             setCodeMat(Tetris);
-        } else if (ratio < 1.8 && ratio > 1.2) {
+        } else if (ratio < 2 && ratio > 1.2) {
             Tetris = std::move(tetris(rect, COLORS::WHITE));
             setCodeMat(Tetris);
             getCodeMatValue(Tetris);
@@ -141,12 +140,17 @@ void Detector::findTetris() {
         std::cout << Param::colorTostring.at(_color) << " tetris number: " << _tetris.size() << std::endl;
         for (auto& t: _tetris) {
             cv::circle(m_imageRaw, t.suctionPosition, 3, cv::Scalar(255, 255, 255), -1);
+            cv::putText(m_imageRaw, std::to_string(t.angleToHorizontal * 180 / M_PI), t.suctionPosition, cv::FONT_HERSHEY_SIMPLEX, 0.5, cv::Scalar(255, 255, 255), 1);
+            cv::putText(m_imageRaw, std::to_string(t.rotatedrect.angle), t.suctionPosition + cv::Point(0, 20), cv::FONT_HERSHEY_SIMPLEX, 0.5, cv::Scalar(0, 0, 255), 1);
+            // cv::putText(m_imageRaw, Param::colorTostring.at(t.type), t.rotatedrect.center, cv::FONT_HERSHEY_SIMPLEX, 0.5, cv::Scalar(255, 255, 255), 1);
+            cv::putText(m_imageRaw, std::to_string(t.updown), t.rotatedrect.center + cv::Point2f(0, 20), cv::FONT_HERSHEY_SIMPLEX, 0.5, cv::Scalar(0, 255, 255), 1);
+            // cv::putText(m_imageRaw, std::to_string(t.codeMatValue), t.rotatedrect.center + cv::Point2f(0, 40), cv::FONT_HERSHEY_SIMPLEX, 0.5, cv::Scalar(0, 255, 255), 1);
             totalTetrisCnt++;
         }
     }
     std::cout << "total tetris number: " << totalTetrisCnt << std::endl;
     cv::imshow("detected", m_imageRaw);
-    cv::waitKey(5000);
+    cv::waitKey(0);
 }
 
 /**
@@ -171,7 +175,9 @@ void Detector::setCodeMat(tetris& Tetris) {
     std::array<cv::Point2f, 4> _points;
     Tetris.rotatedrect.points(_points.data());
     for (int i = 0; i < 3; i++) {
-        RawPoints[i] = Tetris.height < Tetris.width ? _points[i] : _points[i + 1];
+        RawPoints[i] = Tetris.height < Tetris.width ? _points[i] : _points[(i + 3) % 4];
+        cv::circle(m_imageRaw, RawPoints[i], 3, cv::Scalar(255, 255, 255), -1);
+        cv::putText(m_imageRaw, std::to_string(i), RawPoints[i], cv::FONT_HERSHEY_SIMPLEX, 0.5, cv::Scalar(255, 255, 255), 1);
     }
     cv::Point2f codeMatPoints[] = { cv::Point2f(0, codeMat_h), cv::Point2f(0, 0), cv::Point2f(codeMat_w, 0) };
     Tetris.toCodeMat = cv::getAffineTransform(RawPoints, codeMatPoints);
@@ -180,13 +186,12 @@ void Detector::setCodeMat(tetris& Tetris) {
 }
 
 /**
- * @brief 通过对象的codeMat对图像进行二进制编码 
- *        (ORANGE RED)不执行此操作 直接将updown设置为 0 
+ * @brief 通过对象的codeMat对图像进行二进制编码
  * @param Tetris
  */
 void Detector::getCodeMatValue(tetris& Tetris) {
     Tetris.codeMatValue = 0;
-    int cnt { 0 };
+    int cnt { 5 };
     for (int y = 0; y < 200; y += 100) {
         for (int x = 0; x < 300; x += 100) {
             // 提取每格的中心处20×20的部分作为判断依据
@@ -194,7 +199,7 @@ void Detector::getCodeMatValue(tetris& Tetris) {
             if (cv::mean(cv::Mat(Tetris.codeMat, roi))[0] >= 200) {
                 Tetris.codeMatValue |= 1 << cnt;
             }
-            ++cnt;
+            cnt--;
         }
     }
     std::cout << "codeMatValue: " << Tetris.codeMatValue << std::endl;
@@ -207,7 +212,25 @@ void Detector::getCodeMatValue(tetris& Tetris) {
         if (Tetris.updown)
             Tetris.angleToHorizontal += M_PI;
     } else {
-        std::cout << "codeMatValue calculate wrong" << std::endl;
+        // 可能是橙色被误识别
+        Tetris.type = COLORS::ORANGE;
+        setCodeMat(Tetris);
+        Tetris.codeMatValue = 0;
+        int cnt { 3 };
+        for (int y = 0; y < 200; y += 100) {
+            for (int x = 0; x < 200; x += 100) {
+                // 提取每格的中心处20×20的部分作为判断依据
+                cv::Rect roi(x + 40, y + 40, 20, 20);
+                if (cv::mean(cv::Mat(Tetris.codeMat, roi))[0] >= 200) {
+                    Tetris.codeMatValue |= 1 << cnt;
+                }
+                cnt--;
+            }
+        }
+        if (Tetris.codeMatValue != 15) {
+            Tetris.type = COLORS::WHITE;
+            std::cout << "codeMatValue calculate wrong" << std::endl;
+        }
     }
 }
 
@@ -218,10 +241,12 @@ void Detector::getCodeMatValue(tetris& Tetris) {
  */
 void Detector::getSuctionPosition(tetris& Tetris) {
     cv::Mat posVector { (cv::Mat_<double>(3, 1) << 0, 0, 1) };
+    cv::Point2f _point;
     if (Tetris.type == COLORS::PURPLE) {
         posVector = invertAffine(Tetris.toCodeMat) * (Tetris.updown ? Param::posVectorPurpleUpdown : Param::posVectorPurple);
     } else if (Tetris.type == COLORS::YELLOW) {
         posVector = invertAffine(Tetris.toCodeMat) * (Tetris.updown ? Param::posVectorYellowUpdown : Param::posVectorYellow);
+
     } else if (Tetris.type == COLORS::BLUE) {
         posVector = invertAffine(Tetris.toCodeMat) * Param::posVectorBlue;
     } else if (Tetris.type == COLORS::GREEN) {
@@ -235,5 +260,5 @@ void Detector::getSuctionPosition(tetris& Tetris) {
     } else {
         std::cout << "wrong type" << std::endl;
     }
-    Tetris.suctionPosition = cv::Point(posVector.at<double>(0, 0), posVector.at<double>(1, 0));
+    Tetris.suctionPosition = cv::Point(posVector.at<double>(0, 0), posVector.at<double>(0, 1));
 }

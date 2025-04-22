@@ -54,7 +54,7 @@ struct Param {
     const static inline cv::Mat posVectorPurple { cv::Mat(cv::Vec3d(50, 150, 1), CV_64F) };
     const static inline cv::Mat posVectorPurpleUpdown { cv::Mat(cv::Vec3d(250, 50, 1), CV_64F) };
     const static inline cv::Mat posVectorYellow { cv::Mat(cv::Vec3d(250, 150, 1), CV_64F) };
-    const static inline cv::Mat posVectorYellowUpdown { cv::Mat(cv::Vec3d(50, 150, 1), CV_64F) };
+    const static inline cv::Mat posVectorYellowUpdown { cv::Mat(cv::Vec3d(50, 50, 1), CV_64F) };
     const static inline cv::Mat posVectorBlue { cv::Mat(cv::Vec3d(150, 50, 1), CV_64F) };
     const static inline cv::Mat posVectorGreen { cv::Mat(cv::Vec3d(150, 50, 1), CV_64F) };
     const static inline cv::Mat posVectorOrange { cv::Mat(cv::Vec3d(50, 50, 1), CV_64F) };
@@ -71,6 +71,7 @@ struct Param {
                                                                                   { COLORS::BROWN, "BROWN" },
                                                                                   { COLORS::WHITE, "WHITE" } } };
 
+    inline static float threshold;
     inline static float min_Rotatedrect_Area;
     inline static float max_Rotatedrect_Area;
 

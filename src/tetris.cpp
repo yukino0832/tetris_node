@@ -6,9 +6,12 @@ Param::Param(const std::string& filename) {
 
 void Param::load(const std::string& filename) {
     cv::FileStorage fs(filename, cv::FileStorage::READ);
-    phase = fs["phase"] == 1 ? PHASES::FIRST : PHASES::SECOND;
+    int fsphase;
+    fs["phase"] >> fsphase;
+    phase = (fsphase == 1 ? PHASES::FIRST : PHASES::SECOND);
     auto fsdetect = fs["detect"];
     auto fstetris = fsdetect["tetris"];
+    fstetris["threshold"] >> threshold;
     fstetris["minRotatedrectArea"] >> min_Rotatedrect_Area;
     fstetris["maxRotatedrectArea"] >> max_Rotatedrect_Area;
 }
